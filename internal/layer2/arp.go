@@ -70,11 +70,6 @@ func (a *arpResponder) run() {
 func (a *arpResponder) processRequest() dropReason {
 	pkt, eth, err := a.conn.Read()
 	a.logger.Log("interface", a.intf, "ip", a.hardwareAddr, "msg", "received ARP message")
-	if pkt != nil {
-		a.logger.Log("interface", a.intf, "pkt", fmt.Sprintf("%v", pkt), "ip", pkt.TargetIP, "senderIP", pkt.SenderIP, "senderMAC", pkt.SenderHardwareAddr, "msg", "received ARP message")
-	} else {
-		a.logger.Log("interface", a.intf, "pkt is nil for this packet")
-	}
 	if err != nil {
 		// ARP listener doesn't cleanly return EOF when closed, so we
 		// need to hook into the call to arpResponder.Close()
@@ -93,27 +88,27 @@ func (a *arpResponder) processRequest() dropReason {
 
 	// Ignore ARP replies.
 	if pkt.Operation != arp.OperationRequest {
-		a.logger.Log("interface", a.intf, "ip", pkt.TargetIP, "senderIP", pkt.SenderIP, "senderMAC", pkt.SenderHardwareAddr, "responseMAC", a.hardwareAddr, "msg", "Message dropped because it is an ARP reply")
+		a.logger.Log("interface", a.intf, "ip", pkt.TargetIP, "operation", pkt.Operation, "senderIP", pkt.SenderIP, "senderMAC", pkt.SenderHardwareAddr, "responseMAC", a.hardwareAddr, "msg", "Message dropped because it is an ARP reply")
 		return dropReasonARPReply
 	}
 
 	// Ignore ARP requests which are not broadcast or bound directly for this machine.
 	if !bytes.Equal(eth.Destination, ethernet.Broadcast) && !bytes.Equal(eth.Destination, a.hardwareAddr) {
-		a.logger.Log("interface", a.intf, "ip", pkt.TargetIP, "senderIP", pkt.SenderIP, "senderMAC", pkt.SenderHardwareAddr, "responseMAC", a.hardwareAddr, "msg", "Message dropped due to not being addressed to us")
+		a.logger.Log("interface", a.intf, "ip", pkt.TargetIP, "operation", pkt.Operation, "senderIP", pkt.SenderIP, "senderMAC", pkt.SenderHardwareAddr, "responseMAC", a.hardwareAddr, "msg", "Message dropped due to not being addressed to us")
 		return dropReasonEthernetDestination
 	}
 
 	// Ignore ARP requests that the announcer tells us to ignore.
 	if reason := a.announce(pkt.TargetIP); reason != dropReasonNone {
-		a.logger.Log("interface", a.intf, "ip", pkt.TargetIP, "senderIP", pkt.SenderIP, "senderMAC", pkt.SenderHardwareAddr, "responseMAC", a.hardwareAddr, "msg", "Message dropped due to the announcer telling us to do so")
+		a.logger.Log("interface", a.intf, "ip", pkt.TargetIP, "operation", pkt.Operation, "senderIP", pkt.SenderIP, "senderMAC", pkt.SenderHardwareAddr, "responseMAC", a.hardwareAddr, "msg", "Message dropped due to the announcer telling us to do so")
 		return reason
 	}
 
 	stats.GotRequest(pkt.TargetIP.String())
-	a.logger.Log("interface", a.intf, "ip", pkt.TargetIP, "senderIP", pkt.SenderIP, "senderMAC", pkt.SenderHardwareAddr, "responseMAC", a.hardwareAddr, "msg", "got ARP request for service IP, sending response")
+	a.logger.Log("interface", a.intf, "ip", pkt.TargetIP, "senderIP", pkt.SenderIP, "operation", pkt.Operation, "senderMAC", pkt.SenderHardwareAddr, "responseMAC", a.hardwareAddr, "msg", "got ARP request for service IP, sending response")
 
 	if err := a.conn.Reply(pkt, a.hardwareAddr, pkt.TargetIP); err != nil {
-		a.logger.Log("op", "arpReply", "interface", a.intf, "ip", pkt.TargetIP, "senderIP", pkt.SenderIP, "senderMAC", pkt.SenderHardwareAddr, "responseMAC", a.hardwareAddr, "error", err, "msg", "failed to send ARP reply")
+		a.logger.Log("op", "arpReply", "interface", a.intf, "ip", pkt.TargetIP, "senderIP", "operation", pkt.Operation, pkt.SenderIP, "senderMAC", pkt.SenderHardwareAddr, "responseMAC", a.hardwareAddr, "error", err, "msg", "failed to send ARP reply")
 	} else {
 		stats.SentResponse(pkt.TargetIP.String())
 	}
