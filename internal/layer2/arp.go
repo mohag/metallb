@@ -64,13 +64,13 @@ func (a *arpResponder) Gratuitous(ip net.IP) error {
 func (a *arpResponder) run() {
 	for a.processRequest() != dropReasonClosed {
 	}
-	a.logger.Log("interface", a.intf,"msg","responder was closed")
+	a.logger.Log("interface", a.intf, "msg", "responder was closed")
 }
 
 func (a *arpResponder) processRequest() dropReason {
 	pkt, eth, err := a.conn.Read()
 	a.logger.Log("interface", a.intf, "ip", a.hardwareAddr, "msg", "received ARP message")
-	a.logger.Log("interface", a.intf, "ip", pkt.TargetIP, "msg", "received ARP message")
+	//	a.logger.Log("interface", a.intf, "ip", pkt.TargetIP, "msg", "received ARP message")
 	a.logger.Log("interface", a.intf, "senderIP", pkt.SenderIP, "msg", "received ARP message")
 	a.logger.Log("interface", a.intf, "senderMAC", pkt.SenderHardwareAddr, "msg", "received ARP message")
 	if err != nil {
