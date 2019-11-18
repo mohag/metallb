@@ -64,10 +64,12 @@ func (a *arpResponder) Gratuitous(ip net.IP) error {
 func (a *arpResponder) run() {
 	for a.processRequest() != dropReasonClosed {
 	}
+	a.logger.Log("interface", a.intf,"msg","responder was closed")
 }
 
 func (a *arpResponder) processRequest() dropReason {
 	pkt, eth, err := a.conn.Read()
+	a.logger.Log("interface", a.intf, "ip", pkt.TargetIP, "senderIP", pkt.SenderIP, "senderMAC", pkt.SenderHardwareAddr, "responseMAC", a.hardwareAddr, "msg", "received ARP request")
 	if err != nil {
 		// ARP listener doesn't cleanly return EOF when closed, so we
 		// need to hook into the call to arpResponder.Close()
@@ -80,21 +82,25 @@ func (a *arpResponder) processRequest() dropReason {
 		if err == io.EOF {
 			return dropReasonClosed
 		}
+		a.logger.Log("interface", a.intf, "ip", pkt.TargetIP, "senderIP", pkt.SenderIP, "senderMAC", pkt.SenderHardwareAddr, "responseMAC", a.hardwareAddr, "msg", "Message drop as a result of an error")
 		return dropReasonError
 	}
 
 	// Ignore ARP replies.
 	if pkt.Operation != arp.OperationRequest {
+		a.logger.Log("interface", a.intf, "ip", pkt.TargetIP, "senderIP", pkt.SenderIP, "senderMAC", pkt.SenderHardwareAddr, "responseMAC", a.hardwareAddr, "msg", "Message dropped because it is an ARP reply")
 		return dropReasonARPReply
 	}
 
 	// Ignore ARP requests which are not broadcast or bound directly for this machine.
 	if !bytes.Equal(eth.Destination, ethernet.Broadcast) && !bytes.Equal(eth.Destination, a.hardwareAddr) {
+		a.logger.Log("interface", a.intf, "ip", pkt.TargetIP, "senderIP", pkt.SenderIP, "senderMAC", pkt.SenderHardwareAddr, "responseMAC", a.hardwareAddr, "msg", "Message dropped due to not being addressed to us")
 		return dropReasonEthernetDestination
 	}
 
 	// Ignore ARP requests that the announcer tells us to ignore.
 	if reason := a.announce(pkt.TargetIP); reason != dropReasonNone {
+		a.logger.Log("interface", a.intf, "ip", pkt.TargetIP, "senderIP", pkt.SenderIP, "senderMAC", pkt.SenderHardwareAddr, "responseMAC", a.hardwareAddr, "msg", "Message dropped due to the announcer telling us to do so")
 		return reason
 	}
 
