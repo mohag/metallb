@@ -71,7 +71,7 @@ func (a *arpResponder) processRequest() dropReason {
 	pkt, eth, err := a.conn.Read()
 	a.logger.Log("interface", a.intf, "ip", a.hardwareAddr, "msg", "received ARP message")
 	if pkt != nil {
-		a.logger.Log("interface", a.intf, "ip", pkt.TargetIP, "senderIP", pkt.SenderIP, "senderMAC", pkt.SenderHardwareAddr, "msg", "received ARP message")
+		a.logger.Log("interface", a.intf, "pkt", fmt.Sprintf("%v", pkt), "ip", pkt.TargetIP, "senderIP", pkt.SenderIP, "senderMAC", pkt.SenderHardwareAddr, "msg", "received ARP message")
 	} else {
 		a.logger.Log("interface", a.intf, "pkt is nil for this packet")
 	}
@@ -87,7 +87,7 @@ func (a *arpResponder) processRequest() dropReason {
 		if err == io.EOF {
 			return dropReasonClosed
 		}
-		a.logger.Log("interface", a.intf, "ip", pkt.TargetIP, "senderIP", pkt.SenderIP, "senderMAC", pkt.SenderHardwareAddr, "responseMAC", a.hardwareAddr, "msg", "Message dropped as a result of an error")
+		a.logger.Log("interface", a.intf, "error", fmt.Sprintf("%v", err), "msg", "Message dropped as a result of an error")
 		return dropReasonError
 	}
 
