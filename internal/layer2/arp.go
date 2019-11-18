@@ -69,7 +69,6 @@ func (a *arpResponder) run() {
 
 func (a *arpResponder) processRequest() dropReason {
 	pkt, eth, err := a.conn.Read()
-	a.logger.Log("interface", a.intf, "ip", a.hardwareAddr, "msg", "received ARP message")
 	if err != nil {
 		// ARP listener doesn't cleanly return EOF when closed, so we
 		// need to hook into the call to arpResponder.Close()
